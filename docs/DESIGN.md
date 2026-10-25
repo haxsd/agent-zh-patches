@@ -46,8 +46,19 @@
 
 引擎本身不认识 Cursor 或 Devin。新增应用 = 新增一个 adapter + 跑通一次 `scan → apply → audit`。
 
-## 待完成
+## 实现与验证
 
-`core/` 与 `tools/zh.js` 的具体实现（从现有 Cursor 版本移植、参数化）仍在进行中；本仓库当前提交的是
-适配层、版本矩阵与执行契约。实现落地后 `detect / scan / pending / merge / verify / apply / audit / restore`
-八个子命令即可用。
+引擎在 `core/`：`lib/context.js`（适配层与安装定位）、`lib/literals.js`（字面量扫描与分类）、
+`lib/files.js`（哈希/原子写/备份）、`lib/platform.js`（进程检测与 macOS 签名）、`commands.js`（十条命令）。
+入口是 `tools/zh.js`。
+
+Cursor 3.27.12 上的端到端结果：
+
+| 环节 | 结果 |
+| --- | --- |
+| scan | 与维护者现有工具一致：字面量 436,503 / 360,653 / 116,923，去重 169,860，auto 3,463 / context 1,127 |
+| plan | 6,188 / 3,084 / 587，合计 9,859 处 |
+| apply | 三个包落盘后的 sha256 与现有工具生成的文件逐字节一致；`product.json` 校验值同步 |
+| audit | 三个目标的字面量清单全部一致 |
+
+Devin 1.126.0 只完成了目标定位，尚未跑通 scan/apply/audit。

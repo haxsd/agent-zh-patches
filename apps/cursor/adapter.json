@@ -1,11 +1,17 @@
 {
   "id": "cursor",
   "name": "Cursor",
+  "displayName": "Cursor",
+  "command": "cursor",
+  "processName": "Cursor.exe",
   "restart": "完全退出 Cursor 再重新打开",
-  "installDirs": {
-    "win32": ["%LOCALAPPDATA%/Programs/cursor", "C:/Program Files/Cursor"],
-    "darwin": ["/Applications/Cursor.app/Contents"],
-    "linux": ["/opt/Cursor", "~/.local/share/cursor"]
+  "appDirs": {
+    "win32": [
+      "%LOCALAPPDATA%/Programs/cursor/resources/app",
+      "C:/Program Files/Cursor/resources/app"
+    ],
+    "darwin": ["/Applications/Cursor.app/Contents/Resources/app"],
+    "linux": ["/opt/Cursor/resources/app", "~/.local/share/cursor/resources/app"]
   },
   "appDir": "resources/app",
   "version": {

@@ -1,11 +1,17 @@
 {
   "id": "devin",
   "name": "Devin",
+  "displayName": "Devin",
+  "command": "devin",
+  "processName": "Devin.exe",
   "restart": "完全退出 Devin 再重新打开",
-  "installDirs": {
-    "win32": ["%LOCALAPPDATA%/Programs/Devin", "C:/Program Files/Devin"],
-    "darwin": ["/Applications/Devin.app/Contents"],
-    "linux": ["/opt/Devin", "~/.local/share/devin"]
+  "appDirs": {
+    "win32": [
+      "%LOCALAPPDATA%/Programs/Devin/resources/app",
+      "C:/Program Files/Devin/resources/app"
+    ],
+    "darwin": ["/Applications/Devin.app/Contents/Resources/app"],
+    "linux": ["/opt/Devin/resources/app", "~/.local/share/devin/resources/app"]
   },
   "appDir": "resources/app",
   "version": {
