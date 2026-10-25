@@ -114,6 +114,28 @@ function describe(appDir, adapter) {
   return { appDir, productPath, version, commit, product, pkg };
 }
 
+function expandTargets(adapter, appDir) {
+  const out = [];
+  for (const t of adapter.targets || []) {
+    if (!t.glob) { out.push(t); continue; }
+    const base = path.dirname(t.glob);
+    const pattern = path.basename(t.glob);
+    const dir = path.join(appDir, base);
+    if (!fs.existsSync(dir)) continue;
+    const parts = pattern.split('*').map(function (part) {
+      return part.replace(/[.*+?^${}()|[\]\\]/g, function (m) { return '\\' + m; });
+    });
+    const re = new RegExp('^' + parts.join('.*') + '$');
+    for (const e of fs.readdirSync(dir, { withFileTypes: true }).sort(function (a, b) { return a.name.localeCompare(b.name); })) {
+      if (!e.isFile()) continue;
+      if (!re.test(e.name)) continue;
+      const rel = path.posix.join(base.split(path.sep).join('/'), e.name);
+      out.push({ label: (t.labelPrefix || 'file__') + e.name.replace(/[^A-Za-z0-9_-]/g, '_'), file: rel, checksummed: false, textValues: Boolean(t.textValues) });
+    }
+  }
+  return out;
+}
+
 function buildContext(argv) {
   const args = parseArgs(argv);
   const appId = args.app || 'cursor';
@@ -123,13 +145,14 @@ function buildContext(argv) {
   }
   const adapter = readJson(path.join(appDefDir, 'adapter.json'));
   const rules = readJson(path.join(appDefDir, 'rules.json'), {});
-  rules.targets = adapter.targets;
+  const { appDir: detected, tried } = detectAppDir(adapter, args['app-dir'] || null);
+  rules.targets = expandTargets(adapter, detected);
   const glossary = readJson(path.join(appDefDir, 'glossary.json'), { terms: {} });
 
   const dataBase = path.resolve(expand(args.data || path.join(os.homedir(), '.agent-zh')));
   const dataDir = path.join(dataBase, appId);
 
-  const { appDir, tried } = detectAppDir(adapter, args['app-dir'] || null);
+  const appDir = detected;
   const info = describe(appDir, adapter);
 
   return {

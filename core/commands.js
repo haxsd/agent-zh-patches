@@ -11,7 +11,7 @@ const L = require('./lib/literals');
 const P = require('./lib/platform');
 const C = require('./lib/context');
 
-const PLACEHOLDER_RE = /\{\d+\}|\$\([a-zA-Z0-9~-]+\)|%[sd]|\\n|\\u\{[0-9A-Fa-f]{1,6}\}|\\u[0-9A-Fa-f]{4}|\\x[0-9A-Fa-f]{2}/g;
+const PLACEHOLDER_RE = /\{\{[^}]+\}\}|\{\d+\}|\$\([a-zA-Z0-9~-]+\)|%[sd]|\\n|\\u\{[0-9A-Fa-f]{1,6}\}|\\u[0-9A-Fa-f]{4}|\\x[0-9A-Fa-f]{2}/g;
 const emojiCount = (s) => Array.from(s).filter(function (ch) { var cp = ch.codePointAt(0); return (cp >= 0x1F000 && cp <= 0x1FAFF) || (cp >= 0x2600 && cp <= 0x27BF) || (cp >= 0x2B00 && cp <= 0x2BFF) || cp === 0xFE0F; }).length;
 
 const log = (...a) => console.log(...a);
@@ -81,6 +81,7 @@ function isPatched(ctx) {
   // 没有本机落盘记录（例如换机器 / 用别人的数据包）时，用中文密度粗判
   let probe = 0;
   for (const t of ctx.rules.targets) {
+    if (t.textValues) continue;   // webapp 资源里自带 ja 等语言包，不能当作已汉化
     const abs = path.join(ctx.appDir, t.file);
     if (!fs.existsSync(abs)) continue;
     const text = fs.readFileSync(abs, 'utf8');
@@ -184,7 +185,7 @@ function cmdScan(ctx) {
   for (const t of targets) {
     if (!fs.existsSync(t.abs)) { log('跳过（缺失）：' + t.file); continue; }
     const started = Date.now();
-    const { entries, seen, nonAscii } = L.scanFile(t.abs, t.label, ctx.rules, { collectNonAscii: true });
+    const { entries, seen, nonAscii } = L.scanFile(t.abs, t.label, ctx.rules, { collectNonAscii: true, textValues: t.textValues });
     fileStats[t.label] = { file: t.file, bytes: fs.statSync(t.abs).size, literals: seen, values: entries.size, ms: Date.now() - started };
     nonAsciiByFile[t.label] = Object.fromEntries(nonAscii);
     log(t.label.padEnd(14) + ' 字面量 ' + String(seen).padStart(7) + '  去重 ' + String(entries.size).padStart(6) +
@@ -349,12 +350,33 @@ function cmdPlan(ctx) {
   return 0;
 }
 
-function escapeForLiteral(text) {
-  return text.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/'/g, "\\'");
+function escapeForLiteral(text, quote) {
+  let s = String(text).replace(/\\/g, '\\\\');
+  if (quote === '"') s = s.replace(/"/g, '\\"');
+  else if (quote === "'") s = s.replace(/'/g, "\\'");
+  else if (quote === '`') s = s.split('`').join('\\`').split('${').join('\\${');
+  return s;
 }
 
 function patchText(src, entries, label, promoted) {
   const edits = [];
+  // 计算模板字符串区间（含转义），用于决定是否额外转义反引号与 ${
+  const tplRanges = [];
+  {
+    let i = 0;
+    while (i < src.length) {
+      if (src[i] !== '`') { i++; continue; }
+      let j = i + 1;
+      while (j < src.length) {
+        if (src[j] === '\\') { j += 2; continue; }
+        if (src[j] === '`') { tplRanges.push([i, j]); break; }
+        j++;
+      }
+      i = j + 1;
+    }
+  }
+  const insideTemplate = (pos) => tplRanges.some(function (r) { return pos > r[0] && pos < r[1]; });
+
   for (const [value, e] of entries) {
     if (e.safety === 'skip' && !promoted.has(value)) continue;
     if (!e.__target || e.__target === e.__value) continue;
@@ -364,8 +386,8 @@ function patchText(src, entries, label, promoted) {
       const spans = rec.spans || [];
       if (!spans.length) continue;
       const quote = form[0];
-      const repl = quote + escapeForLiteral(e.__target) + quote;
-      for (const start of spans) edits.push({ start, end: start + form.length, repl, kind: e.safety });
+      const repl = quote + escapeForLiteral(e.__target, quote) + quote;
+      for (const start of spans) edits.push({ start, end: start + form.length, repl, kind: e.safety, inTpl: insideTemplate(start) });
     }
   }
   edits.sort((a, b) => a.start - b.start || b.end - a.end);
@@ -381,7 +403,13 @@ function patchText(src, entries, label, promoted) {
   let out = src, positional = 0, global = 0;
   for (let i = kept.length - 1; i >= 0; i--) {
     const ed = kept[i];
-    out = out.slice(0, ed.start) + ed.repl + out.slice(ed.end);
+    let repl = ed.repl;
+    if (ed.inTpl) {
+      const q = repl[0];
+      const body = repl.slice(1, -1).split('`').join('\\`').split('${').join('\\${');
+      repl = q + body + q;
+    }
+    out = out.slice(0, ed.start) + repl + out.slice(ed.end);
     if (ed.kind === 'auto') global++; else positional++;
   }
   return { text: out, positional, global };
@@ -486,8 +514,10 @@ function auditFile(ctx, cand, label) {
     if (v.length < (ctx.rules.limits && ctx.rules.limits.minLength || 2)) continue;
     expected.set(v, (expected.get(v) || 0) + n);
   }
+  const translatedSet = new Set(Object.values(tr));
   const mismatches = [];
   for (const k of new Set([...expected.keys(), ...scannedCount.keys()])) {
+    if (/[\u4e00-\u9fff]/.test(k) && !translatedSet.has(k)) continue;   // 内置 CJK 片段噪声
     if (k.length < (ctx.rules.limits && ctx.rules.limits.minLength || 2)) continue;
     if (!expected.has(k) && !/^[\x20-\x7E]*$/.test(k)) continue;
     const want = expected.get(k) || 0;

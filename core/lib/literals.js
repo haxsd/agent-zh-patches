@@ -20,7 +20,7 @@
  */
 const fs = require('fs');
 
-const LITERAL_RE = /"(?:[^"\\\r\n]|\\.)*"|'(?:[^'\\\r\n]|\\.)*'/g;
+const LITERAL_RE = /"(?:[^"\\\r\n]|\\.)*"|'(?:[^'\\\r\n]|\\.)*'|`(?:[^`\\]|\\.)*`/g;
 
 function decodeLoose(raw) {
   const body = raw.slice(1, -1);
@@ -72,6 +72,21 @@ const KIND_DOM = 'dom';
 const KIND_CODE = 'code';
 const KIND_OTHER = 'other';
 
+function looksNaturalText(v) {
+  if (v.length < 3 || v.length > 200) return false;
+  if (!/[A-Za-z]/.test(v)) return false;
+  if (!/[a-z]{2,}/.test(v)) return false;            // 至少一个正常单词（排除 SVG 路径、缩写串）
+  if (/[\/{}\\]/.test(v)) return false;             // 路径/URL/模板片段
+  if (/^[a-z][a-zA-Z0-9_$]*$/.test(v)) return false;   // 单个小写标识符
+  if (/^[A-Z0-9_]+$/.test(v)) return false;            // 常量
+  if (/^[MLHVCSQTAZ][0-9\s.,-]+$/i.test(v)) return false; // SVG path
+  if (/=>|::|;\s*$/.test(v)) return false;
+  if (looksLikeCode(v)) return false;
+  const t = v.trim();
+  if (/^[A-Za-z]/.test(t) && t.split(/\s+/).length >= 2) return true;
+  if (/^[A-Z][a-zA-Z]+$/.test(t) && t.length >= 4) return true;
+  return false;
+}
 function buildClassifiers(rules) {
   // 属性名识别分两层：
   //   uiProps         —— 精确匹配（label / title / description …）
@@ -120,14 +135,46 @@ function scanFile(absPath, label, rules, opts) {
   const entries = new Map();
   const nonAscii = new Map();   // 原文自带的非 ASCII 字面量（审计用）
 
+  // JSON.parse(`...`) 消息表：把两端的反引号替换为空格，让内部字符串成为候选
+  const blobMasks = [];
+  {
+    const re = /JSON\.parse\(\s*`/g;
+    let bm;
+    while ((bm = re.exec(src)) !== null) {
+      let k = bm.index + bm[0].length;
+      let close = -1;
+      for (; k < src.length; k++) {
+        if (src[k] === '\\') { k++; continue; }
+        if (src[k] === '`') { close = k; break; }
+      }
+      if (close > 0) blobMasks.push([bm.index + bm[0].length - 1, close]);
+    }
+  }
+
+  // 含插值的模板字符串整体屏蔽（等长替换为空格），避免把内部代码当文案
+  const masked = src.replace(/`(?:\\.|[^`\\])*`/g, function (tpl) {
+    return tpl.indexOf('${') === -1 ? tpl : '`' + ' '.repeat(tpl.length - 2) + '`';
+  });
+
+  // 消息表两端反引号置空，让内部 "..." 参与匹配
+  let masked2 = masked;
+  if (blobMasks.length) {
+    const chars = masked2.split('');
+    for (const r of blobMasks) {
+      if (chars[r[0]] === '`') chars[r[0]] = ' ';
+      if (chars[r[1]] === '`') chars[r[1]] = ' ';
+    }
+    masked2 = chars.join('');
+  }
   LITERAL_RE.lastIndex = 0;
   let m;
   let seen = 0;
 
   // 1) 先收集所有字面量匹配
   const matches = [];
-  while ((m = LITERAL_RE.exec(src)) !== null) {
-    matches.push({ start: m.index, end: m.index + m[0].length, raw: m[0] });
+  while ((m = LITERAL_RE.exec(masked2)) !== null) {
+    const st = m.index, en = st + m[0].length;
+    matches.push({ start: st, end: en, raw: src.slice(st, en) });
   }
   LITERAL_RE.lastIndex = 0;
 
@@ -157,11 +204,18 @@ function scanFile(absPath, label, rules, opts) {
     }
     if (/[\r\n]/.test(value)) continue;
     if (/^%[A-Za-z0-9_.-]+%$/.test(value)) continue;   // NLS 消息键不是界面文案
+    if (value.indexOf('\\"') !== -1 || value.indexOf('\":\"') !== -1) continue;   // 嵌套 JSON 片段
+    if (value.indexOf('`') !== -1) continue;   // 模板字符串片段
     seen++;
 
     const start = mt.start;
-    const prefix = src.slice(Math.max(0, start - lookback), start);
+    const prefix = masked.slice(Math.max(0, start - lookback), start);
     const cls = classify(prefix);
+    let kind = cls.kind, prop = cls.prop;
+    if ((options.textValues || rules.textValues) && kind !== KIND_UI && kind !== KIND_ID && kind !== KIND_COMPARE &&
+        kind !== KIND_METHOD && kind !== KIND_DOM && looksNaturalText(value)) {
+      kind = KIND_UI; prop = 'textValue';
+    }
 
     let e = entries.get(value);
     if (!e) {
@@ -179,25 +233,25 @@ function scanFile(absPath, label, rules, opts) {
     rec.total++;
     rec.all.push(start);
 
-    if (cls.kind === KIND_UI) {
+    if (kind === KIND_UI) {
       e.ui++;
       rec.ui.push(start);
-      e.props[cls.prop] = (e.props[cls.prop] || 0) + 1;
+      e.props[prop] = (e.props[prop] || 0) + 1;
       if (!e.sample) {
         e.sample = {
           file: label,
-          prop: cls.prop,
+          prop: prop,
           before: cleanSnippet(src.slice(Math.max(0, start - 70), start)),
           after: cleanSnippet(src.slice(start + raw.length, start + raw.length + 70)),
         };
       }
-    } else if (cls.kind === KIND_OTHER) {
+    } else if (kind === KIND_OTHER) {
       e.other++;
       rec.other++;
     } else {
       e.risky++;
       rec.risky++;
-      e.riskyKinds[cls.kind] = (e.riskyKinds[cls.kind] || 0) + 1;
+      e.riskyKinds[kind] = (e.riskyKinds[kind] || 0) + 1;
     }
   }
   return { src, entries, seen, nonAscii };
