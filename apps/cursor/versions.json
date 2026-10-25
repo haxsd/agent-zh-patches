@@ -1,0 +1,42 @@
+{
+  "app": "cursor",
+  "note": "只有 status=verified 的版本表示在本机实际落盘并审计通过；其它版本可用通用规则尝试。",
+  "versions": [
+    {
+      "version": "3.27.12",
+      "build": "df132ffba9",
+      "status": "verified",
+      "verifiedAt": "2026-10-24",
+      "targets": 3,
+      "replacements": 9859,
+      "notes": "新增 56 条文案（插件/Hooks/MCP/应用密钥）；/name 保持字面命令"
+    },
+    {
+      "version": "3.27.6",
+      "build": "f711952054",
+      "status": "verified",
+      "verifiedAt": "2026-10-23",
+      "targets": 3,
+      "replacements": 9802,
+      "notes": "新增 41 条（应用密钥、发布状态、任务标签）；key=键名、secret=密钥"
+    },
+    {
+      "version": "3.26.16",
+      "build": "8fcb8ace5c",
+      "status": "verified",
+      "verifiedAt": "2026-10-22",
+      "targets": 3,
+      "replacements": 9783,
+      "notes": "无新增界面文案；新增人工提升表（Yes/No/On/颜色名等单字标签）"
+    },
+    {
+      "version": "3.26.13",
+      "build": "3bfec37374",
+      "status": "verified",
+      "verifiedAt": "2026-10-21",
+      "targets": 3,
+      "replacements": 9746,
+      "notes": "项目迁移修复、发布流程、会话分享说明等 64 条"
+    }
+  ]
+}

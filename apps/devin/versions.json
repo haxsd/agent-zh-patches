@@ -1,0 +1,15 @@
+{
+  "app": "devin",
+  "note": "targets 已在本机定位，但还没有完整跑过 scan/apply/audit，状态记为 located。",
+  "versions": [
+    {
+      "version": "1.126.0",
+      "build": "d70b4713dfea",
+      "status": "located",
+      "verifiedAt": null,
+      "targets": 3,
+      "replacements": null,
+      "notes": "Electron + VS Code 内核；三块候选包均无中文；product.json 有 12 个 checksums，改动的三块都在其中"
+    }
+  ]
+}

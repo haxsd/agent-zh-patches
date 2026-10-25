@@ -1,0 +1,24 @@
+{
+  "name": "agent-zh-patches",
+  "version": "0.1.0",
+  "description": "Agent-run Simplified Chinese patches for AI desktop apps (Cursor, Devin)",
+  "license": "MIT",
+  "private": false,
+  "engines": {
+    "node": ">=16"
+  },
+  "bin": {
+    "zh": "tools/zh.js"
+  },
+  "scripts": {
+    "detect": "node tools/zh.js detect"
+  },
+  "keywords": [
+    "i18n",
+    "localization",
+    "zh-hans",
+    "cursor",
+    "devin",
+    "agent"
+  ]
+}

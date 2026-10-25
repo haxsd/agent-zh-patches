@@ -1,0 +1,42 @@
+{
+  "id": "devin",
+  "name": "Devin",
+  "restart": "完全退出 Devin 再重新打开",
+  "installDirs": {
+    "win32": ["%LOCALAPPDATA%/Programs/Devin", "C:/Program Files/Devin"],
+    "darwin": ["/Applications/Devin.app/Contents"],
+    "linux": ["/opt/Devin", "~/.local/share/devin"]
+  },
+  "appDir": "resources/app",
+  "version": {
+    "packageJson": "package.json",
+    "field": "version",
+    "build": { "file": "product.json", "field": "commit" }
+  },
+  "integrity": {
+    "file": "product.json",
+    "checksumsField": "checksums",
+    "keyPrefix": "out/"
+  },
+  "targets": [
+    {
+      "label": "workbench",
+      "file": "out/vs/workbench/workbench.desktop.main.js",
+      "checksummed": true,
+      "note": "IDE 主界面（VS Code 内核）"
+    },
+    {
+      "label": "sessions",
+      "file": "out/vs/sessions/sessions.desktop.main.js",
+      "checksummed": true,
+      "note": "Agent 模式的会话界面（自有实现）"
+    },
+    {
+      "label": "chat-client",
+      "file": "out/vs/workbench/windsurf-chat-client/index.js",
+      "checksummed": true,
+      "note": "聊天客户端（Windsurf 派生），候选目标"
+    }
+  ],
+  "rules": "apps/devin/rules.json"
+}

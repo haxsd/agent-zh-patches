@@ -1,0 +1,42 @@
+{
+  "id": "cursor",
+  "name": "Cursor",
+  "restart": "完全退出 Cursor 再重新打开",
+  "installDirs": {
+    "win32": ["%LOCALAPPDATA%/Programs/cursor", "C:/Program Files/Cursor"],
+    "darwin": ["/Applications/Cursor.app/Contents"],
+    "linux": ["/opt/Cursor", "~/.local/share/cursor"]
+  },
+  "appDir": "resources/app",
+  "version": {
+    "packageJson": "package.json",
+    "field": "version",
+    "build": { "file": "product.json", "field": "commit" }
+  },
+  "integrity": {
+    "file": "product.json",
+    "checksumsField": "checksums",
+    "keyPrefix": "out/"
+  },
+  "targets": [
+    {
+      "label": "agent-window",
+      "file": "out/vs/workbench/workbench.glass.main.js",
+      "checksummed": false,
+      "note": "Agent 窗口（glass 模式）与内联的编辑器核心"
+    },
+    {
+      "label": "editor-window",
+      "file": "out/vs/workbench/workbench.desktop.main.js",
+      "checksummed": true,
+      "note": "编辑器窗口、设置页；在 product.json 校验表中"
+    },
+    {
+      "label": "automations",
+      "file": "out/vs/workbench/workbench.anysphere-ui-automations.js",
+      "checksummed": false,
+      "note": "Automations 界面"
+    }
+  ],
+  "rules": "apps/cursor/rules.json"
+}
