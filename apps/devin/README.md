@@ -6,7 +6,7 @@ Devin 桌面端（Electron + VS Code 内核）的本地化适配。
 
 | 版本 | build | 状态 | 验证日期 | 替换处数 |
 | --- | --- | --- | --- | --- |
-| 1.126.0 | `d70b4713dfea` | 目标已定位，未验证 | — | — |
+| 1.126.0 | `d70b4713dfea` | 已验证 | 2026-10-25 | 2,987 |
 
 ## 结构差异
 
@@ -34,9 +34,8 @@ Devin 的界面分两块，和 Cursor 不完全一样：
 
 应用目录是 `<安装目录>/resources/app`（无 asar，文件是展开的）。
 
-## 下一步
+## 已验证结果
 
-1. **收敛规则**：scan 已跑通（162,849 条去重，UI 候选 2,131 条），但 `auto` 里混进大量 Monaco / WebGPU 内部
-   `label`（如 `Monaco rectangle renderer buffer`），需要在 `rules.json` 里加跳过规则，避免把调试名称当界面文案。
-2. 在 1.126.0 上跑 `pending → 翻译 → merge → verify → apply → audit`，通过后把 `versions.json` 状态改成 `verified`。
-3. 记录 Agent 模式里哪些文案来自 `sessions`、哪些来自 `chat-client`，避免漏翻。
+- 扫描：去重 162,112 条，界面文案 1,509 条（规则已跳过 Monaco/WebGPU 调试名与 `%nls.key%` 消息键）。
+- 替换：2,987 处 —— workbench 669 / sessions 1,546 / chat-client 772；审计三个目标全部一致。
+- `product.json` 的三个 checksums 已同步。

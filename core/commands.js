@@ -61,6 +61,11 @@ function loadPromote(ctx) {
 function isPromoted(ctx, value) {
   return Object.prototype.hasOwnProperty.call(loadPromote(ctx), value);
 }
+function skipMatchers(rules) {
+  return ((rules && rules.skipValues) || []).map(function (src) {
+    try { return new RegExp(src, 'i'); } catch (err) { return null; }
+  }).filter(Boolean);
+}
 function loadCandidates(ctx) { return readJson(ctx.paths.candidates, null); }
 
 function isPatched(ctx) {
@@ -147,6 +152,7 @@ function cmdStatus(ctx) {
     snapshotVersion: cand ? cand.version : null,
     snapshotBuild: cand ? cand.build : null,
     sameBuild,
+    targets: ctx.rules.targets.length,
     translations: Object.keys(tr).length,
     pending
   };
@@ -167,6 +173,7 @@ function cmdStatus(ctx) {
 // ─────────────────────────────── scan ───────────────────────────────
 function cmdScan(ctx) {
   const targets = targetPaths(ctx);
+  const skip = skipMatchers(ctx.rules);
   const patched = isPatched(ctx);
   if (patched && !ctx.args.force) {
     throw new Error('当前文件已经是打过补丁的状态，扫描只会抽到中文。\n先还原：node tools/zh.js restore --app ' + ctx.appId + ' --force');
@@ -200,7 +207,8 @@ function cmdScan(ctx) {
   const counts = { auto: 0, context: 0, skip: 0, total: 0 };
   const byFile = {};
   for (const [value, m] of merged) {
-    const { safety, natural } = L.classify(m);
+    let { safety, natural } = L.classify(m);
+    if (skip.some(function (re) { return re.test(value); })) safety = 'skip';
     counts[safety]++; counts.total++;
     if (safety !== 'skip') {
       for (const label of Object.keys(m.files)) {

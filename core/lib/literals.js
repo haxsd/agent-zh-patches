@@ -44,6 +44,8 @@ function hasCJK(s) {
 
 /** 看起来像代码/标识/路径/快捷键，而不是给人看的文案 */
 function looksLikeCode(v) {
+  // NLS message key（VS Code 的 %key% 形式）：不是界面文案
+  if (/^%[A-Za-z0-9_.-]+%$/.test(v)) return true;
   if (/^[\w$./\\:@#%&?=~+*<>|^!,;()\[\]{}-]+$/.test(v) && !/\s/.test(v)) return true; // 无空格的单 token
   if (/:\/\//.test(v)) return true;
   if (/^[./\\]/.test(v)) return true;
@@ -154,6 +156,7 @@ function scanFile(absPath, label, rules, opts) {
       continue;
     }
     if (/[\r\n]/.test(value)) continue;
+    if (/^%[A-Za-z0-9_.-]+%$/.test(value)) continue;   // NLS 消息键不是界面文案
     seen++;
 
     const start = mt.start;
