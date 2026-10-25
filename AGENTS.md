@@ -11,7 +11,7 @@
 ## 1. 检测
 
 ```powershell
-node tools/zh.js detect --app cursor        # 或 devin
+node tools/zh.js detect --app cursor
 ```
 
 输出包含：安装目录、应用目录、版本、build、已支持/未支持（对照 `apps/<app>/versions.json`）。
