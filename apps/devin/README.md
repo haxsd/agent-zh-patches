@@ -36,6 +36,7 @@ Devin 的界面分两块，和 Cursor 不完全一样：
 
 ## 下一步
 
-1. 在 1.126.0 上跑 `scan`，确认三块能抽到足够的 UI 候选（VS Code 内核部分可能有 NLS 通道，需要排除重复）。
-2. 跑通 `apply` + `audit` 后把 `versions.json` 里的状态改成 `verified`。
+1. **收敛规则**：scan 已跑通（162,849 条去重，UI 候选 2,131 条），但 `auto` 里混进大量 Monaco / WebGPU 内部
+   `label`（如 `Monaco rectangle renderer buffer`），需要在 `rules.json` 里加跳过规则，避免把调试名称当界面文案。
+2. 在 1.126.0 上跑 `pending → 翻译 → merge → verify → apply → audit`，通过后把 `versions.json` 状态改成 `verified`。
 3. 记录 Agent 模式里哪些文案来自 `sessions`、哪些来自 `chat-client`，避免漏翻。

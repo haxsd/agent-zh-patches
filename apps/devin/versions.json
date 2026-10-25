@@ -1,15 +1,15 @@
 {
   "app": "devin",
-  "note": "targets 已在本机定位，但还没有完整跑过 scan/apply/audit，状态记为 located。",
+  "note": "targets 已在本机定位，scan 已跑通（2026-10-25）；尚未做 apply/audit，状态记为 scanned。",
   "versions": [
     {
       "version": "1.126.0",
       "build": "d70b4713dfea",
-      "status": "located",
+      "status": "scanned",
       "verifiedAt": null,
       "targets": 3,
       "replacements": null,
-      "notes": "Electron + VS Code 内核；三块候选包均无中文；product.json 有 12 个 checksums，改动的三块都在其中"
+      "notes": "Electron + VS Code 内核。scan 结果：字面量 115,300 / 389,528 / 214,750，去重 162,849（auto 1,209 / context 922 / skip 160,718）。auto 里混有 Monaco/WebGPU 内部 label，规则需要收敛后再翻。"
     }
   ]
 }
