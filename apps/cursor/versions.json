@@ -3,6 +3,15 @@
   "note": "只有 status=verified 的版本表示在本机实际落盘并审计通过；其它版本可用通用规则尝试。",
   "versions": [
     {
+      "version": "3.27.14",
+      "build": "69b724ebc6",
+      "status": "verified",
+      "verifiedAt": "2026-10-26",
+      "targets": 3,
+      "replacements": 9861,
+      "notes": "新增 1 条（同名密钥提示）；用旧引擎落盘验证，公开引擎待复跑"
+    },
+    {
       "version": "3.27.12",
       "build": "df132ffba9",
       "status": "verified",
