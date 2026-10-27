@@ -3,6 +3,15 @@
   "note": "只有 status=verified 的版本表示在本机实际落盘并审计通过；其它版本可用通用规则尝试。",
   "versions": [
     {
+      "version": "3.27.22",
+      "build": "b1aa50cb6d",
+      "status": "verified",
+      "verifiedAt": "2026-10-28",
+      "targets": 3,
+      "replacements": 9078,
+      "notes": "新增 233 条（Slack/项目协作/面板命令）；通用规则扫描，审计一致"
+    },
+    {
       "version": "3.27.14",
       "build": "69b724ebc6",
       "status": "verified",
